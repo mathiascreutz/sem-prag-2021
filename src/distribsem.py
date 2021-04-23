@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import plot_utils
+import operator
 import re
 
 from mpl_toolkits.mplot3d import Axes3D
@@ -28,18 +29,21 @@ def show_kwic(text, word, window, dimensionality, show_n):
                 break
             
 
-def create_vectors(vocab_size, dimensionality, window_size, text):
-    M = np.ones((vocab_size, dimensionality))
-    
+def create_vectors(dimensionality, window_size, text, freq_thresh=5):
+
     text = [w.lower() for w in text]
     
     fd = FreqDist(text)
-    vocabulary = [w for w, _ in fd.most_common(vocab_size)]
-    vocabtoi = {w:i for i, w in enumerate(vocabulary)}
+
+    vocabulary = [ w for w, f in sorted(fd.items(), key=operator.itemgetter(1), reverse=True) \
+                   if f >= freq_thresh ]
+    vocabtoi = { w:i for i, w in enumerate(vocabulary) }
     
-    context_vocabulary = [w for w, _ in fd.most_common(dimensionality)]
-    contexttoi = {w:i for i, w in enumerate(context_vocabulary)}
-    
+    context_vocabulary = [ w for w, _ in fd.most_common(dimensionality) ]
+    contexttoi = { w:i for i, w in enumerate(context_vocabulary) }
+
+    M = np.ones((len(vocabulary), dimensionality))
+
     for i, token in enumerate(text):
         if token in vocabulary:
             context = text[max(0, i - window_size):i] + text[i + 1:i + window_size + 1]
